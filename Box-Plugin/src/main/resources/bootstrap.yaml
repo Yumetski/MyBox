@@ -1,0 +1,18 @@
+spring:
+  config:
+    import: "optional:nacos:mybox-dev.yaml"
+  application:
+    name: mybox
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 47.108.153.136:8848
+        namespace: dev
+      config:
+        import-check:
+          enabled: false
+        server-addr: 47.108.153.136:8848
+        file-extension: yaml
+        namespace: 057986a7-af3e-4209-8165-d1dedc84c06c

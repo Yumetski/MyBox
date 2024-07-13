@@ -1,11 +1,17 @@
-package org.lec.boxplugin.loader;
+package org.lec.boxpluginweb.loader;
 
+import lombok.extern.slf4j.Slf4j;
+import sun.misc.Unsafe;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class BoxClassLoader extends URLClassLoader {
 
     private Map<String, Class<?>> loaderClasses = new ConcurrentHashMap<>();
@@ -19,21 +25,27 @@ public class BoxClassLoader extends URLClassLoader {
     }
 
     @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
+    protected Class<?> findClass(String name){
         Class<?> clazz = loaderClasses.get(name);
         if (clazz != null){
             return clazz;
         }
         try {
             // 调用父类的findClass方法加载指定名称的类
-            clazz = super.findClass(name);
+            ClassLoader appClassLoader = Thread.currentThread().getContextClassLoader();
+            clazz = appClassLoader.loadClass(name);
             // 将加载的类添加到已加载的类集合中
-            loaderClasses.put(name, clazz);
             return clazz;
         }catch (ClassNotFoundException e){
-            e.printStackTrace();
-            return null;
+            log.error("父类加载器没有找到该类，调用子类加载器 ClassNotFoundException ：{}", e.toString());
+            try {
+                clazz = super.findClass(name);
+                loaderClasses.put(name, clazz);
+            } catch (ClassNotFoundException ex) {
+                log.error("子类加载器也没有该类，ClassNotFoundException：{}", ex.toString());
+            }
         }
+        return clazz;
     }
 
     public void unloadClasses() {

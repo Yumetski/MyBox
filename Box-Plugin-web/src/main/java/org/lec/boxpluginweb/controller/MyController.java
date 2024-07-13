@@ -1,11 +1,11 @@
-package org.lec.boxplugin.controller;
+package org.lec.boxpluginweb.controller;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.lec.boxpluginweb.config.JarList;
 import org.lec.boxplugininterface.service.MyService;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,9 +16,13 @@ public class MyController {
     @Resource
     private ApplicationContext applicationContext;
 
+    @Resource
+    private JarList jarList;
+
 
     @GetMapping("/hello")
     public String hello(){
+        log.info("jarList 中的值为：{}", jarList.getJarlist().toString());
         try {
             MyService myService = (MyService) applicationContext.getBean("org.lec.boxpluginext.service.myServiceImpl");
             log.info("成功获取到bean：{}", myService);

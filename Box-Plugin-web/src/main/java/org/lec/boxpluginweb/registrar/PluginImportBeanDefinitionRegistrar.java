@@ -1,21 +1,27 @@
-package org.lec.boxplugin.registrar;
+package org.lec.boxpluginweb.registrar;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,61 +47,61 @@ public class PluginImportBeanDefinitionRegistrar implements ImportBeanDefinition
      */
     private String loadJarNames;
 
-//    @Override
-//    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-//        //获取要动态加载的jar列表
-//        List<String> jarList = new LinkedList<>();
-//        if (Strings.isNotBlank(loadJarNames)) {
-//            jarList.addAll(Arrays.asList(loadJarNames.split(",")));
-//        }
-//        ApplicationHome home = new ApplicationHome();
-//        File applicationJarFile = home.getSource();
-//        String applicationJarFilePath = applicationJarFile.getAbsolutePath();
-//        List<String> classJars = getDependence(applicationJarFilePath);
-//        //开始加载jar包
-//        try {
-//            if (jarList.size() > 0) {
-//                //循环按顺序加载
-//                for (String jarName : jarList) {
-//                    if (validateJarAndVersion(classJars, jarName)) {
-//                        LOGGER.info("开始热加载jar包 ---------------> {}", jarName);
-//                        ClassPathResource classPathResource = new ClassPathResource(libPath + "/" + jarName);
-//                        File jar = new File("/temp/" + jarName);
-//                        FileUtils.copyToFile(classPathResource.getInputStream(), jar);
-//                        JarFile jarFile = new JarFile(jar);
-//                        URI uri = jar.toURI();
-//                        URL url = uri.toURL();
-//                        //获取classloader
-//                        URLClassLoader classLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
-//                        //利用反射获取方法
-//                        Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-//                        if (!method.isAccessible()) {
-//                            method.setAccessible(true);
-//                        }
-//                        method.invoke(classLoader, url);
-//                        for (Enumeration<JarEntry> ea = jarFile.entries(); ea.hasMoreElements(); ) {
-//                            JarEntry jarEntry = ea.nextElement();
-//                            String name = jarEntry.getName();
-//                            if (name != null && name.endsWith(".class")) {
-//                                String loadName = name.replace("/", ".").substring(0, name.length() - 6);
-//                                //加载class
-//                                Class<?> c = classLoader.loadClass(loadName);
-//                                //注册bean
-//                                insertBean(c, registry);
-//                            }
-//                        }
-//                        LOGGER.info("结束热加载jar包 ---------------> {}", jarName);
-//                        jar.delete();
-//                    } else {
-//                        LOGGER.info("依赖中已存在该jar包 ---------------> {}", jarName);
-//                    }
-//                }
-//            }
-//        } catch (Exception e) {
-//            LOGGER.error("热加载jar包异常");
-//            e.printStackTrace();
-//        }
-//    }
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        //获取要动态加载的jar列表
+        List<String> jarList = new LinkedList<>();
+        if (Strings.isNotBlank(loadJarNames)) {
+            jarList.addAll(Arrays.asList(loadJarNames.split(",")));
+        }
+        ApplicationHome home = new ApplicationHome();
+        File applicationJarFile = home.getSource();
+        String applicationJarFilePath = applicationJarFile.getAbsolutePath();
+        List<String> classJars = getDependence(applicationJarFilePath);
+        //开始加载jar包
+        try {
+            if (jarList.size() > 0) {
+                //循环按顺序加载
+                for (String jarName : jarList) {
+                    if (validateJarAndVersion(classJars, jarName)) {
+                        LOGGER.info("开始热加载jar包 ---------------> {}", jarName);
+                        ClassPathResource classPathResource = new ClassPathResource(libPath + "/" + jarName);
+                        File jar = new File("/temp/" + jarName);
+                        FileUtils.copyToFile(classPathResource.getInputStream(), jar);
+                        JarFile jarFile = new JarFile(jar);
+                        URI uri = jar.toURI();
+                        URL url = uri.toURL();
+                        //获取classloader
+                        URLClassLoader classLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
+                        //利用反射获取方法
+                        Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+                        if (!method.isAccessible()) {
+                            method.setAccessible(true);
+                        }
+                        method.invoke(classLoader, url);
+                        for (Enumeration<JarEntry> ea = jarFile.entries(); ea.hasMoreElements(); ) {
+                            JarEntry jarEntry = ea.nextElement();
+                            String name = jarEntry.getName();
+                            if (name != null && name.endsWith(".class")) {
+                                String loadName = name.replace("/", ".").substring(0, name.length() - 6);
+                                //加载class
+                                Class<?> c = classLoader.loadClass(loadName);
+                                //注册bean
+                                insertBean(c, registry);
+                            }
+                        }
+                        LOGGER.info("结束热加载jar包 ---------------> {}", jarName);
+                        jar.delete();
+                    } else {
+                        LOGGER.info("依赖中已存在该jar包 ---------------> {}", jarName);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("热加载jar包异常");
+            e.printStackTrace();
+        }
+    }
 
     private void insertBean(Class<?> c, BeanDefinitionRegistry registry) {
         if (isSpringBeanClass(c)) {

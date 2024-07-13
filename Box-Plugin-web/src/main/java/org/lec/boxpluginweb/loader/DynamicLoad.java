@@ -1,8 +1,8 @@
-package org.lec.boxplugin.loader;
+package org.lec.boxpluginweb.loader;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.lec.boxplugin.util.SpringAnnotationUtil;
+import org.lec.boxpluginweb.util.SpringAnnotationUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -32,7 +32,6 @@ public class DynamicLoad {
 
     private Map<String, BoxClassLoader> boxClassLoaderMap = new ConcurrentHashMap<>();
 
-
     @Value("${box-plugin.path}")
     private String path;
 
@@ -56,12 +55,13 @@ public class DynamicLoad {
             HashSet<Class> initBeanClass = new HashSet<>(jarFile.size());
             while(entries.hasMoreElements()){
                 JarEntry jarEntry = entries.nextElement();
-                if (jarEntry.getName().endsWith(".class") && isClassLoad(jarEntry.getName())){
+                if (jarEntry.getName().endsWith(".class")  && isClassLoad(jarEntry.getName())){
                     // 加载类到jvm中
                     // 获取类的全路径名
                     String className = jarEntry.getName().replace('/', '.').substring(0, jarEntry.getName().length() - 6);
                     // 进行反射
                     boxClassLoader.loadClass(className);
+                    log.info("动态加载类：{} 成功", className);
                 }
             }
             Map<String, Class<?>> loaderClasses = boxClassLoader.getLoaderClasses();
@@ -85,6 +85,7 @@ public class DynamicLoad {
                     beanFactory.autowireBean(clazz);
                     beanFactory.initializeBean(clazz, className);
                     initBeanClass.add(clazz);
+                    log.info("成功注入bean：{}", beanName);
                 }
 
                 // 带有XxlJob注解的方法注册任务
@@ -216,7 +217,7 @@ public class DynamicLoad {
 //        }
         List<String> classLoadPackageList = new ArrayList<>();
         classLoadPackageList.add("org/lec/boxpluginext");
-        classLoadPackageList.add("org/lec/boxplugininterface");
+//        classLoadPackageList.add("org/lec/boxplugininterface");
         for (String classLoadPackage : classLoadPackageList){
             if(fileName.startsWith(classLoadPackage)){
                 return true;

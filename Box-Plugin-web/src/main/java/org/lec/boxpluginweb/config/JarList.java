@@ -1,7 +1,7 @@
-package org.lec.boxplugin.config;
+package org.lec.boxpluginweb.config;
 
 import jakarta.annotation.Resource;
-import org.lec.boxplugin.event.JarListUpdatedEvent;
+import org.lec.boxpluginweb.event.JarListUpdatedEvent;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Configuration;

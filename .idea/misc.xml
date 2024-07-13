@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/Box-Plugin-interface/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/Box-Plugin-ext/pom.xml" />
+        <option value="$PROJECT_DIR$/Box-Plugin-web/pom.xml" />
       </list>
     </option>
   </component>

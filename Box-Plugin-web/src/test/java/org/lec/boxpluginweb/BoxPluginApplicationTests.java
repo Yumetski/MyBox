@@ -1,10 +1,10 @@
-package org.lec.boxpluginext;
+package org.lec.boxpluginweb;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BoxPluginExtApplicationTests {
+class BoxPluginApplicationTests {
 
     @Test
     void contextLoads() {

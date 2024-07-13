@@ -2,13 +2,15 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="Box-Plugin" />
-        <module name="Box-Plugin-ext" />
+        <module name="Box-Plugin-web" />
         <module name="Box-Plugin-interface" />
+        <module name="Box-Plugin-ext" />
       </profile>
     </annotationProcessing>
   </component>
@@ -17,7 +19,8 @@
       <module name="Box-Plugin" options="-parameters" />
       <module name="Box-Plugin-ext" options="-parameters" />
       <module name="Box-Plugin-interface" options="-parameters" />
-      <module name="MyBox" options="-parameters" />
+      <module name="Box-Plugin-web" options="-parameters" />
+      <module name="MyBox" options="" />
     </option>
   </component>
 </project>

@@ -8,11 +8,11 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 47.108.153.136:8848
+        server-addr: ${nacos.address}
         namespace: dev
       config:
         import-check:
           enabled: false
-        server-addr: 47.108.153.136:8848
+        server-addr: ${nacos.address}
         file-extension: yaml
         namespace: 057986a7-af3e-4209-8165-d1dedc84c06c

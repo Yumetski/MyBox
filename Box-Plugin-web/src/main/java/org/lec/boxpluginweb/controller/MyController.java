@@ -2,7 +2,7 @@ package org.lec.boxpluginweb.controller;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.lec.boxpluginweb.config.JarList;
+import org.lec.boxplugin.config.JarInfoList;
 import org.lec.boxplugininterface.service.MyService;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -17,12 +17,12 @@ public class MyController {
     private ApplicationContext applicationContext;
 
     @Resource
-    private JarList jarList;
+    private JarInfoList jarInfoList;
 
 
     @GetMapping("/hello")
     public String hello(){
-        log.info("jarList 中的值为：{}", jarList.getJarlist().toString());
+        log.info("jarList 中的值为：{}", jarInfoList.getJarlist().toString());
         try {
             MyService myService = (MyService) applicationContext.getBean("org.lec.boxpluginext.service.myServiceImpl");
             log.info("成功获取到bean：{}", myService);

@@ -2,6 +2,7 @@ package org.lec.boxplugin.loader;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.lec.boxplugin.config.JarInfoList;
 import org.lec.boxplugin.util.SpringAnnotationUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -22,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-
 @Slf4j
 @Component
 public class DynamicLoad {
@@ -32,11 +32,10 @@ public class DynamicLoad {
 
     private Map<String, BoxClassLoader> boxClassLoaderMap = new ConcurrentHashMap<>();
 
-
     @Value("${box-plugin.path}")
     private String path;
 
-    public void loadJar(String fileName, Boolean isRegisterXxlJob) throws Exception {
+    public void loadJar(String fileName, JarInfoList jarInfoList) throws Exception {
         File file = new File(path + "/" + fileName);
         HashMap<String, String> jobPar = new HashMap<>();
         // 获取beanFactory
@@ -56,12 +55,13 @@ public class DynamicLoad {
             HashSet<Class> initBeanClass = new HashSet<>(jarFile.size());
             while(entries.hasMoreElements()){
                 JarEntry jarEntry = entries.nextElement();
-                if (jarEntry.getName().endsWith(".class") && isClassLoad(jarEntry.getName())){
+                if (jarEntry.getName().endsWith(".class")  && isClassLoad(jarEntry.getName(), jarInfoList)){
                     // 加载类到jvm中
                     // 获取类的全路径名
                     String className = jarEntry.getName().replace('/', '.').substring(0, jarEntry.getName().length() - 6);
                     // 进行反射
                     boxClassLoader.loadClass(className);
+                    log.info("动态加载类：{} 成功", className);
                 }
             }
             Map<String, Class<?>> loaderClasses = boxClassLoader.getLoaderClasses();
@@ -85,41 +85,9 @@ public class DynamicLoad {
                     beanFactory.autowireBean(clazz);
                     beanFactory.initializeBean(clazz, className);
                     initBeanClass.add(clazz);
+                    log.info("成功注入bean：{}", beanName);
                 }
 
-                // 带有XxlJob注解的方法注册任务
-                //过滤方法
-//                Map<Method, XxlJob> annotatedMethods = null;
-//                try {
-//                    annotatedMethods = MethodIntrospector.selectMethods(clazz, new MethodIntrospector.MetadataLookup<XxlJob>() {
-//                        @Override
-//                        public XxlJob inspect(Method method) {
-//                            return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
-//                        }
-//                    });
-//                }catch (Throwable e){
-//                    log.error("出现错误:{}", e.getMessage());
-//                }
-//                // 生成并注册方法的jobHandler
-//                for (Map.Entry<Method, XxlJob> methodXxlJobEntry : annotatedMethods.entrySet()){
-//                    Method executeMethod = methodXxlJobEntry.getKey();
-//                    XxlJob xxlJob = executeMethod.getAnnotation(XxlJob.class);
-//                    if (Objects.isNull(xxlJob)) {
-//                        throw new Exception(executeMethod.getName() + "(), 没有添加@XxlJob注解配置定时策略");
-//                    }
-//                    if (CronExpression.isValidExpression(xxlJob.value())){
-//                        throw new Exception(executeMethod.getName() + "(),@XxlJob参数内容错误");
-//                    }
-//                    XxlJob value = methodXxlJobEntry.getValue();
-//                    jobPar.put(xxlJob.value(), xxlJob.value());
-//                    if (isRegisterXxlJob){
-//                        executeMethod.setAccessible(true);
-//                        //regist
-//                        Method initMethod = null;
-//                        Method destroyMethod = null;
-//                        // todo xxljob加载没有写完
-//                    }
-//                }
             }
             initBeanClass.forEach(beanFactory :: getBean);
         } catch (IOException e) {
@@ -133,12 +101,7 @@ public class DynamicLoad {
         //获取加载当前jar的类加载器
         BoxClassLoader boxClassLoader = boxClassLoaderMap.get(fileName);
 
-        //获取jobHandlerRepository私有属性，为了卸载xxlJob任务
-//        Field privateFiled = XxlJobExecutor.class.getDeclaredField("jobHandlerRepository");
-        //设置私有属性可以访问
-//        privateFiled.setAccessible(true);
-//        XxlJobSpringExecutor xxlJobSpringExecutor = new XxlJobSpringExecutor();
-//        ConcurrentHashMap<String, IJobHandler> jobHandlerRepository = (ConcurrentHashMap<String, IJobHandler>) privateFiled.get(xxlJobSpringExecutor);
+
         // 获取beanFactory, 准备从spring中卸载
         DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
         Map<String, Class<?>> loaderClasses = boxClassLoader.getLoaderClasses();
@@ -160,23 +123,6 @@ public class DynamicLoad {
                 continue;
             }
 
-//            Map<Method, XxlJob> annotatedMethods = null;
-//            try {
-//                annotatedMethods = MethodIntrospector.selectMethods(bean.getClass(), new MethodIntrospector.MetadataLookup<XxlJob>() {
-//                    @Override
-//                    public XxlJob inspect(Method method) {
-//                        return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
-//                    }
-//                });
-//            }catch (Throwable e){
-//                e.printStackTrace();
-//            }
-            //将job从执行器中移除
-//            for (Map.Entry<Method, XxlJob> methodXxlJobEntry : annotatedMethods.entrySet()){
-//                XxlJob xxlJob = methodXxlJobEntry.getValue();
-//                jobHandlerRepository.remove(xxlJob.value());
-//            }
-            // 从Spring中移除，这里的移除仅仅移除的bean，并未移除bean定义
             beanNames.add(beanName);
             beanFactory.destroyBean(beanName, bean);
         }
@@ -194,31 +140,17 @@ public class DynamicLoad {
 //        jobHandlerRepository.remove(fileName);
         boxClassLoaderMap.remove(fileName);
         boxClassLoader.unloadClasses();
-//        try {
-//            Field field = ClassLoader.class.getDeclaredField("classes");
-//            field.setAccessible(true);
-//            Vector<Class<?>> classes = (Vector<Class<?>>) field.get(boxClassLoader);
-//            classes.removeAllElements();
-//            boxClassLoaderMap.remove(fileName);
-//            boxClassLoader.unload();
-//        }catch (NoSuchFieldException e){
-//            log.error("动态卸载的类，从类加载器中卸载失败");
-//            e.printStackTrace();
-//        }catch (IllegalAccessException e){
-//            log.error("动态卸载的类，从类加载器中卸载失败");
-//            e.printStackTrace();
-//        }
+
     }
 
-    public boolean isClassLoad(String fileName) {
+    public boolean isClassLoad(String fileName, JarInfoList jarInfoList) {
 //        if (CollUtil.isEmpty(classLoadPackageList)) {
 //            return false;
 //        }
-        List<String> classLoadPackageList = new ArrayList<>();
-        classLoadPackageList.add("org/lec/boxpluginext");
-        classLoadPackageList.add("org/lec/boxplugininterface");
-        for (String classLoadPackage : classLoadPackageList){
-            if(fileName.startsWith(classLoadPackage)){
+        List<JarInfoList.JarInfo> jarlist = jarInfoList.getJarlist();
+
+        for (JarInfoList.JarInfo jarInfo : jarlist){
+            if(fileName.startsWith(jarInfo.getClassLoadPackage())){
                 return true;
             }
         }
